@@ -49,6 +49,11 @@ namespace BraintreeSimpleServer.Controllers
             return View();
         }
 
+        public ActionResult SubscribeIndex()
+        {
+            return View();
+        }
+
         public async Task<ActionResult> ClientToken()
         {
             var clientToken = await gateway.ClientToken.GenerateAsync(
@@ -150,7 +155,7 @@ namespace BraintreeSimpleServer.Controllers
             Customer userCustomer;
             if (true)
             {
-                string customerID = "123456"; // example
+                string customerID = "233596121"; // example
                 userCustomer = FindCustomer(customerID);
             }
             else
@@ -169,7 +174,7 @@ namespace BraintreeSimpleServer.Controllers
             var plansList = GetPlans();
 
             // finding the rightPlan
-            var planID = plansList.FirstOrDefault(p => p.Name == "silver_plan").Id; // example "silver_plan"
+            var planID = plansList.FirstOrDefault(p => p.Name == "Plan_service1").Id; // example "silver_plan"
 
             var request = new SubscriptionRequest
             {
@@ -260,7 +265,7 @@ namespace BraintreeSimpleServer.Controllers
 
         private Customer FindCustomer(string customer_id)
         {
-            return gateway.Customer.Find("the_customer_id");
+            return gateway.Customer.Find(customer_id);
         }
 
         public string CreatePaymentMethod(string customer_id, string NonceFromTheClient)
@@ -478,6 +483,7 @@ namespace BraintreeSimpleServer.Controllers
 
             return View();
         }
+
 
     }
 }

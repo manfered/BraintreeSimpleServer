@@ -1,0 +1,62 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron">
+    <div id="dropin-container"></div>
+    <button id="submit-button">Request payment method</button>
+</div>
+
+
+
+@Scripts.Render("~/bundles/jquery")
+<script src="https://js.braintreegateway.com/web/dropin/1.14.1/js/dropin.min.js"></script>
+<script>
+    var CLIENT_TOKEN_FROM_SERVER;
+
+    $(document).ready(function () {
+        ajaxToken();
+    });
+
+    function ajaxToken() {
+        $.ajax({
+            type: "GET",
+            url: "/home/ClientToken",
+            data: "",
+            success: function (xhr) {
+                CLIENT_TOKEN_FROM_SERVER = xhr.data;
+
+
+                var button = document.querySelector('#submit-button');
+
+                braintree.dropin.create({
+                    authorization: CLIENT_TOKEN_FROM_SERVER,
+                    container: '#dropin-container'
+                }, function (createErr, instance) {
+                    button.addEventListener('click', function () {
+                        instance.requestPaymentMethod(function (err, payload) {
+                            // Submit payload.nonce to your server
+                            console.log(payload.nonce);
+                            ajaxPurchase(payload.nonce);
+                        });
+                    });
+                });
+            }
+        });
+    }
+
+    function ajaxPurchase(nonce) {
+        $.ajax({
+            type: "POST",
+            url: "/home/CreateSubscription",
+            data: {"payment_method_nonce":nonce},
+            success: function (xhr) {
+                //$(msg).appendTo("#edix");
+                var obj = jQuery.parseJSON(xhr.data);
+                $('.verificationCount').text(obj);
+            }
+        });
+    }
+
+
+</script>
