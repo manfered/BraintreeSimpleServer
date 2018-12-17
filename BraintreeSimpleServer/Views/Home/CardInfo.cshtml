@@ -1,0 +1,20 @@
+﻿
+@{
+    ViewBag.Title = "CardInfo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="jumbotron">
+    <h2>CardInfo</h2>
+    @using (Html.BeginForm("CardInfo", "Home", FormMethod.Post))
+    {
+        @Html.ValidationSummary(true);
+        @Html.AntiForgeryToken();
+
+        @:Enter Payment Nonce :- @Html.TextBox("Nonce")
+        <input type="submit" value="Submit" />
+    }
+</div>
+
+
+

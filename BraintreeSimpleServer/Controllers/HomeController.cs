@@ -67,6 +67,20 @@ namespace BraintreeSimpleServer.Controllers
             string nonceFromTheClient = collection["payment_method_nonce"];
             // Use payment method nonce here
 
+            // we have to check if the user has Braintree customer_id or not
+            // for test usages we create 
+            var customer_id = CreateCustomer(1);
+
+
+            // for test usage create payment method
+            var paymentMethodToken = CreatePaymentMethod(customer_id, nonceFromTheClient);
+
+            // for test usage find customer's cards
+            var paymentMethodsList = FindCustomerPaymentMethod(customer_id);
+
+            // for test usage finding card info
+            FindPaymentMethodCardInfo(paymentMethodToken);
+
             var request = new TransactionRequest
             {
                 Amount = 10.00M,
@@ -249,9 +263,131 @@ namespace BraintreeSimpleServer.Controllers
             return gateway.Customer.Find("the_customer_id");
         }
 
+        public string CreatePaymentMethod(string customer_id, string NonceFromTheClient)
+        {
+            var request = new PaymentMethodRequest
+            {
+                CustomerId = customer_id,
+                PaymentMethodNonce = NonceFromTheClient,
+                Options = new PaymentMethodOptionsRequest // verifying all cards before they are stored in your Vault
+                {
+                    VerifyCard = true
+                }
+            };
+
+            Result<PaymentMethod> result = gateway.PaymentMethod.Create(request);
+
+            if (result.IsSuccess())
+            {
+                return result.Target.Token;
+            }
+            return result.Errors.ToString();
+        }
+
+        public string UpdatePaymentMethod(string PaymentMethodToken, string NonceFromTheClient)
+        {
+            var updateRequest = new PaymentMethodRequest
+            {
+                //BillingAddress = new PaymentMethodAddressRequest
+                //{
+                //    StreetAddress = "100 Maple Lane",
+                //    Options = new PaymentMethodAddressOptionsRequest
+                //    {
+                //        UpdateExisting = true
+                //    }
+                //},
+                PaymentMethodNonce = NonceFromTheClient
+            };
+
+            Result<PaymentMethod> result = gateway.PaymentMethod.Update(PaymentMethodToken, updateRequest);
+
+            if (result.IsSuccess())
+            {
+                return result.Target.Token;
+            }
+            return result.Errors.ToString();
+        }
+
+        public PaymentMethod FindPaymentMethod(string PaymentMethodToken)
+        {
+            return gateway.PaymentMethod.Find(PaymentMethodToken);
+        }
+
+        public void FindPaymentMethodCardInfo(string PaymentMethodToken)
+        {
+            try
+            {
+                PaymentMethod paymentMethod = gateway.PaymentMethod.Find(PaymentMethodToken);
+                paymentMethod.GetType();
+
+                CreditCard creditCard = (CreditCard)paymentMethod;
+                
+                var returnObject = new
+                {
+                    LastFour = creditCard.LastFour, // 1234
+                    ExpirationYear = creditCard.ExpirationYear,
+                    ExpirationMonth = creditCard.ExpirationMonth,
+                    MaskedNumber = creditCard.MaskedNumber,
+                    CardTypeName = creditCard.CardType.ToString()
+                };
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+            
+        }
+
+        public void MakePaymentMethodDefault(string PaymentMethodToken)
+        {
+            var updateRequest = new PaymentMethodRequest
+            {
+                Options = new PaymentMethodOptionsRequest
+                {
+                    MakeDefault = true
+                }
+            };
+
+            Result<PaymentMethod> result = gateway.PaymentMethod.Update(PaymentMethodToken, updateRequest);
+        }
+
         private static string GetPaymentMethodToken(Customer userCustomer)
         {
             return userCustomer.PaymentMethods.First().Token;
+        }
+
+        public void FindPaymentMethodNonceCardInfo(string PaymentMethodNonce)
+        {
+            try
+            {
+                PaymentMethodNonce paymentMethodNonce = gateway.PaymentMethodNonce.Find(PaymentMethodNonce);
+                ThreeDSecureInfo info = paymentMethodNonce.ThreeDSecureInfo;
+                if (info == null)
+                {
+                    return; // This means that the nonce was not 3D Secured
+                }
+                var returnObject = new
+                {
+                    cardType = paymentMethodNonce.Details.CardType,
+                    last_four = paymentMethodNonce.Details.LastFour,
+                    type = paymentMethodNonce.Type
+                };
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            //paymentMethodNonce.BinData
+
+        }
+
+        private PaymentMethod[] FindCustomerPaymentMethod(string customer_id)
+        {
+            Customer customer = gateway.Customer.Find(customer_id);
+            return customer.PaymentMethods; // array of PaymentMethod instances
         }
 
         private List<Plan> GetPlans()
@@ -326,6 +462,21 @@ namespace BraintreeSimpleServer.Controllers
             }
 
             return Content(transaction.Status.ToString());
+        }
+
+        [HttpGet]
+        public ActionResult CardInfo()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult CardInfo(string Nonce)
+        {
+            FindPaymentMethodNonceCardInfo(Nonce);
+
+            return View();
         }
 
     }
