@@ -357,6 +357,13 @@ namespace BraintreeSimpleServer.Controllers
             Result<PaymentMethod> result = gateway.PaymentMethod.Update(PaymentMethodToken, updateRequest);
         }
 
+        public bool DeletePaymentMethod(string PaymentMethodToken)
+        {
+            var result = gateway.PaymentMethod.Delete(PaymentMethodToken);
+
+            return result.IsSuccess();
+        }
+
         private static string GetPaymentMethodToken(Customer userCustomer)
         {
             return userCustomer.PaymentMethods.First().Token;
